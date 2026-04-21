@@ -1,0 +1,22 @@
+{
+  "name": "ca-document-tool",
+  "version": "2.0.0",
+  "description": "人材紹介会社CA向け書類自動生成ツール（事務職特化版）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.1",
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
+    "googleapis": "^144.0.0",
+    "mammoth": "^1.8.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "uuid": "^11.0.3",
+    "xlsx": "^0.18.5"
+  }
+}
