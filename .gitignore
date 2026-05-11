@@ -6,3 +6,4 @@ output/
 *.log
 .claude/
 generators/__pycache__/
+*.OLD.xlsx.bak

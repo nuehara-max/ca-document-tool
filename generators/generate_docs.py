@@ -918,51 +918,66 @@ def gen_carrierwink(d, out_dir, sid):
     wb = load_workbook(dst)
     ws = wb['エントリーシート']
 
-    # 希望エリア D3
-    ws['D3'] = d.get('desiredArea', '')
-    # ふりがな D4 / E4
-    kana = d.get('candidateNameKana', '')
+    # 紹介会社様情報（必要なら .env で設定）
+    ws['D3'] = d.get('agencyCompany', '株式会社キャリアライフ')
+    ws['D4'] = d.get('agencyContact', '')
+    # 希望エリア D5
+    ws['D5'] = d.get('desiredArea', '')
+    # フリガナ D6 / E6（姓 / 名）— ひらがな指定でもこのテンプレはカタカナ前提なので、カタカナ化して入れる
+    kana_raw = d.get('candidateNameKana', '') or ''
+    # ひらがな→カタカナ変換
+    kana = ''.join(chr(ord(c) + 0x60) if 0x3041 <= ord(c) <= 0x3096 else c for c in kana_raw)
     parts = kana.split() if kana else ['', '']
-    ws['D4'] = parts[0] if parts else ''
-    ws['E4'] = parts[1] if len(parts) > 1 else ''
-    # 氏名 D5 / E5
+    ws['D6'] = parts[0] if parts else ''
+    ws['E6'] = parts[1] if len(parts) > 1 else ''
+    # 氏名 D7 / E7（姓 / 名）
     name = d.get('candidateName', '')
     nparts = name.split() if name else ['', '']
-    ws['D5'] = nparts[0] if nparts else ''
-    ws['E5'] = nparts[1] if len(nparts) > 1 else ''
-    # 生年月日 D6 / E6 / F6
-    ws['D6'] = d.get('birthYear', '')
-    ws['E6'] = d.get('birthMonth', '')
-    ws['F6'] = d.get('birthDay', '')
-    # 性別 D8
-    ws['D8'] = d.get('gender', '')
-    # メール D9
-    ws['D9'] = d.get('email', '')
-    # 郵便番号 D10 (前3桁) / E10 (後4桁)
+    ws['D7'] = nparts[0] if nparts else ''
+    ws['E7'] = nparts[1] if len(nparts) > 1 else ''
+    # 生年月日 D8 / E8 / F8（年 / 月 / 日）
+    ws['D8'] = d.get('birthYear', '')
+    ws['E8'] = d.get('birthMonth', '')
+    ws['F8'] = d.get('birthDay', '')
+    # 性別 D10
+    ws['D10'] = d.get('gender', '')
+    # メールアドレス D11（D11:F11 結合）
+    ws['D11'] = d.get('email', '')
+    # 郵便番号 D12（前3桁）/ E12（後4桁）
     zip_code = (d.get('zipCode', '') or '').strip()
     if '-' in zip_code:
         zparts = zip_code.split('-', 1)
     else:
         digits = ''.join(ch for ch in zip_code if ch.isdigit())
         zparts = [digits[:3], digits[3:]] if digits else ['', '']
-    ws['D10'] = zparts[0] if zparts else ''
-    ws['E10'] = zparts[1] if len(zparts) > 1 else ''
-    # 住所 D11
-    ws['D11'] = d.get('address', '')
-    # 電話 D12
-    ws['D12'] = d.get('mobile', d.get('phone', ''))
-    # 学歴 D13
-    ws['D13'] = d.get('lastEducation', '')
-    # 面接希望日時 (rows 15-20: D=日付, E=時間帯)
-    interview_dates = d.get('interviewDates', [])
+    ws['D12'] = zparts[0] if zparts else ''
+    ws['E12'] = zparts[1] if len(zparts) > 1 else ''
+    # 住所 D13（D13:F13 結合）
+    ws['D13'] = d.get('address', '')
+    # 電話番号 D14
+    ws['D14'] = d.get('mobile', d.get('phone', ''))
+    # 学歴 D15
+    ws['D15'] = d.get('lastEducation', '')
+    # 引っ越し予定の有無 D16 (有り / 無し)
+    rel = d.get('relocationPlan')
+    if rel in (True, 'true', 'True', 1, '1', 'あり', '有り'):
+        ws['D16'] = '有り'
+    else:
+        ws['D16'] = '無し'
+    # 引っ越し時期と場所 D17（任意フィールド）
+    ws['D17'] = d.get('relocationDetail', '')
+    # 面接希望日時 (rows 19-24: D=日付, E=時間帯) — 最大6件
+    interview_dates = d.get('interviewDates', []) or []
     for i, iv in enumerate(interview_dates[:6]):
-        r = 15 + i
+        r = 19 + i
         ws.cell(r, 4, value=format_interview_date_jp(iv.get('date', '')))   # D '4月28日'
         ws.cell(r, 5, value=format_interview_time(iv))  # E '終日可' or '10:00〜12:00'
-    # 入社可能時期 D21
-    ws['D21'] = d.get('availableFrom', '')
-    # 備考 D23
-    ws['D23'] = d.get('notes', '')
+    # 入社可能時期 D25
+    ws['D25'] = d.get('availableFrom', '')
+    # 外国籍 D26（任意。foreignStatus フィールドがあれば書込み）
+    ws['D26'] = d.get('foreignStatus', '')
+    # 備考欄 D27（D27:F27 結合）
+    ws['D27'] = d.get('notes', '')
 
     wb.save(dst)
     return {'label': 'キャリアウィンク ES', 'filename': os.path.basename(dst), 'path': dst}
