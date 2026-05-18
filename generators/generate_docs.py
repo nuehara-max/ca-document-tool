@@ -343,16 +343,18 @@ def gen_resume(d, out_dir, sid):
     age = d.get('age', '')
     bdate_str = f"{by}年{bm}月{bd}日生　（ 満{age}歳 ）" if by else ''
     cell_write(tc(t0, 2, 1), bdate_str)
-    # row3: [3,1]=住所ふりがな（ひらがな化）, [3,3]=自宅電話
+    # row3: [3,1]=住所ふりがな（ひらがな化）
+    # ※ [3,3]は「（自宅電話）」ラベル、[5,3]は「（携帯電話）」ラベルなので上書きしないこと
     cell_write(tc(t0, 3, 1), to_hiragana(d.get('addressKana', '')))
-    cell_write(tc(t0, 3, 3), d.get('phone', ''))
+    # 自宅電話の値は [4,3]（ラベル「（自宅電話）」の直下）
+    cell_write(tc(t0, 4, 3), d.get('phone', ''))
     # row4: [4,1]=〒+住所（番地含むフル住所）
     zip_str = (d.get('zipCode','') or '').strip()
     addr_full = (d.get('address','') or '').strip()
     zip_disp = f"〒{zip_str}" if zip_str else ''
     cell_write(tc(t0, 4, 1), f"{zip_disp}\n{addr_full}" if zip_disp else addr_full)
-    # row5: [5,3]=携帯電話
-    cell_write(tc(t0, 5, 3), d.get('mobile', d.get('phone', '')))
+    # 携帯電話の値は [6,3]（ラベル「（携帯電話）」の直下）
+    cell_write(tc(t0, 6, 3), d.get('mobile', d.get('phone', '')))
     # row6: [6,1]=email
     cell_write(tc(t0, 6, 1), d.get('email', ''))
 
@@ -779,15 +781,12 @@ def gen_career(d, out_dir, sid):
                 p_biz = make_para(f"・事業内容：{business}")
                 insert_anchor.addnext(p_biz); insert_anchor = insert_anchor.getnext()
 
-                # ③ 空行
-                insert_anchor.addnext(deepcopy(empty_p)); insert_anchor = insert_anchor.getnext()
-
-                # ④ テーブル（期間・雇用形態・業務内容）
+                # ③ テーブル（期間・雇用形態・業務内容）— 事業内容の直下に密着
                 if tbl_template is not None:
                     tbl = make_table_for_job(w, tbl_template)
                     insert_anchor.addnext(tbl); insert_anchor = insert_anchor.getnext()
 
-                # ⑤ 区切り空行（次ジョブとの間）
+                # ④ 区切り空行（次ジョブとの間）
                 insert_anchor.addnext(deepcopy(empty_p)); insert_anchor = insert_anchor.getnext()
 
     # ■自己PR
