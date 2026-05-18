@@ -387,7 +387,7 @@ ${totalText.slice(0, 40000)}
   "jobPreference": "就業条件の補足（自由記述）",
   "recommendations": [],
   "interviewDates": [
-    { "date": "YYYY-MM-DD", "timeStart": "HH:MM (24h 例: 10:00)", "timeEnd": "HH:MM (24h 例: 12:00)", "note": "備考（任意）" }
+    { "date": "YYYY-MM-DD", "timeStart": "HH:MM (24h・15分刻みのみ：00/15/30/45 のいずれか。例 10:00, 10:15, 10:30, 10:45)", "timeEnd": "HH:MM (同上の15分刻み)", "note": "備考（任意）" }
   ],
   "notes": "備考・面談メモ（整理した内容）"
 }`;
@@ -400,6 +400,15 @@ ${totalText.slice(0, 40000)}
       console.error('[parse-files] JSON parse failed. Raw (head):', raw.slice(0, 500));
       console.error('[parse-files] Raw (tail):', raw.slice(-500));
       throw new Error('AIがJSONを返せませんでした。（モデル応答を破棄）詳細はサーバーログ参照。');
+    }
+
+    // AIが返した面接日時を15分刻みに丸め込み（保険）
+    if (parsed && Array.isArray(parsed.interviewDates)) {
+      parsed.interviewDates = parsed.interviewDates.map(iv => ({
+        ...iv,
+        timeStart: snapTo15Min(iv.timeStart || ''),
+        timeEnd:   snapTo15Min(iv.timeEnd   || ''),
+      }));
     }
 
     return res.json({
@@ -480,6 +489,26 @@ ${workSummary || '未記入'}
 // API: 書類生成（AI → Python → ファイル）
 // ════════════════════════════════════════════
 
+// 'HH:MM' を15分刻みに丸めて返す（最寄りの15分へ）
+function snapTo15Min(hhmm) {
+  if (!hhmm) return '';
+  const m = String(hhmm).match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return hhmm;
+  let h = parseInt(m[1], 10);
+  let min = Math.round(parseInt(m[2], 10) / 15) * 15;
+  if (min === 60) { min = 0; h += 1; }
+  if (h >= 24) { h = 23; min = 45; }
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+
+function normalizeInterviewDates(arr = []) {
+  return (arr || []).map(iv => ({
+    ...iv,
+    timeStart: snapTo15Min(iv.timeStart || ''),
+    timeEnd:   snapTo15Min(iv.timeEnd   || ''),
+  }));
+}
+
 app.post('/api/generate', async (req, res) => {
   try {
     const formData = req.body;
@@ -488,6 +517,11 @@ app.post('/api/generate', async (req, res) => {
     }
     if (!hasLLMKey()) {
       return res.status(500).json({ error: 'GEMINI_API_KEY または ANTHROPIC_API_KEY を .env に設定してください。' });
+    }
+
+    // 面接希望日時を15分刻みに正規化（保険）
+    if (formData.interviewDates) {
+      formData.interviewDates = normalizeInterviewDates(formData.interviewDates);
     }
 
     // Step1: AIで職務要約・スキル・自己PRを生成

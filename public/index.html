@@ -734,8 +734,8 @@ function populateForm(d) {
         const m = String(iv.timeSlot).match(/(\d{1,2}:?\d{2})\s*[〜~\-–]\s*(\d{1,2}:?\d{2})/);
         if (m) { ts = ts || m[1]; te = te || m[2]; }
       }
-      if (startEl && ts) startEl.value = toHM(ts);
-      if (endEl   && te) endEl.value   = toHM(te);
+      if (startEl && ts) startEl.value = snapTo15Min(toHM(ts));
+      if (endEl   && te) endEl.value   = snapTo15Min(toHM(te));
       if (noteEl  && iv.note) noteEl.value = iv.note;
     });
   }
@@ -902,6 +902,26 @@ function buildInterviewTable() {
       <td><input type="text" class="iv-note" placeholder="備考" /></td>`;
     tbody.appendChild(tr);
   });
+  // 15分単位への丸め込み（手入力で 10:13 などになった場合に補正）
+  tbody.querySelectorAll('.iv-start, .iv-end').forEach(el => {
+    el.addEventListener('change', () => {
+      el.value = snapTo15Min(el.value);
+    });
+  });
+}
+
+// 'HH:MM' を15分刻みに丸めて返す（最寄りの15分へ）
+function snapTo15Min(hhmm) {
+  if (!hhmm) return '';
+  const m = String(hhmm).match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return hhmm;
+  let h = parseInt(m[1], 10);
+  let min = parseInt(m[2], 10);
+  // 15分刻みに丸める（最寄り）
+  min = Math.round(min / 15) * 15;
+  if (min === 60) { min = 0; h += 1; }
+  if (h >= 24) h = 23, min = 45;
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 }
 
 // ── チップ（複数選択） ──
@@ -967,12 +987,12 @@ function collectFormData() {
     });
   });
 
-  // 面接希望日時
+  // 面接希望日時（送信時にも15分刻みへ丸め込み）
   const interviewDates = [];
   document.querySelectorAll('#interviewTbody tr').forEach(tr => {
     const date  = tr.querySelector('.iv-date')?.value  || '';
-    const start = tr.querySelector('.iv-start')?.value || '';
-    const end   = tr.querySelector('.iv-end')?.value   || '';
+    const start = snapTo15Min(tr.querySelector('.iv-start')?.value || '');
+    const end   = snapTo15Min(tr.querySelector('.iv-end')?.value   || '');
     const note  = tr.querySelector('.iv-note')?.value  || '';
     if (date || start || end || note) {
       const timeSlot = (start && end) ? `${start}〜${end}` : (start || end || '');
