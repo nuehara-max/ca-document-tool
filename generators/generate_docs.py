@@ -759,7 +759,8 @@ def gen_career(d, out_dir, sid):
             ep = deepcopy(empty_p)
             prev_anchor.addnext(ep)
         else:
-            # 各ジョブを [会社ヘッダー][空行][table][・事業内容][空行] の順で正しく挿入
+            # 各ジョブを [会社ヘッダー][・事業内容][空行][table][空行] の順で挿入
+            # ※ 事業内容は会社ヘッダー直下に置く（テーブルの「下」ではなく「上」）
             insert_anchor = p_shokureki
             for idx, w in enumerate(works):
                 company = w.get('company', '')
@@ -774,17 +775,17 @@ def gen_career(d, out_dir, sid):
                 p_hdr = make_para(header_text, p_company_template)
                 insert_anchor.addnext(p_hdr); insert_anchor = insert_anchor.getnext()
 
-                # ② 空行
+                # ② ・事業内容（会社ヘッダーの直下に配置）
+                p_biz = make_para(f"・事業内容：{business}")
+                insert_anchor.addnext(p_biz); insert_anchor = insert_anchor.getnext()
+
+                # ③ 空行
                 insert_anchor.addnext(deepcopy(empty_p)); insert_anchor = insert_anchor.getnext()
 
-                # ③ テーブル（期間・雇用形態・業務内容）
+                # ④ テーブル（期間・雇用形態・業務内容）
                 if tbl_template is not None:
                     tbl = make_table_for_job(w, tbl_template)
                     insert_anchor.addnext(tbl); insert_anchor = insert_anchor.getnext()
-
-                # ④ ・事業内容
-                p_biz = make_para(f"・事業内容：{business}")
-                insert_anchor.addnext(p_biz); insert_anchor = insert_anchor.getnext()
 
                 # ⑤ 区切り空行（次ジョブとの間）
                 insert_anchor.addnext(deepcopy(empty_p)); insert_anchor = insert_anchor.getnext()
