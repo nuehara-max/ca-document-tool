@@ -556,12 +556,25 @@ function prefectureOf(address) {
   return m ? m[1] : '';
 }
 
+// 日付文字列を "M月D日（曜）" 形式に整形
+function formatDateJP(dateStr) {
+  if (!dateStr) return '';
+  // YYYY-MM-DD / YYYY/MM/DD どちらも受け付け
+  const m = String(dateStr).match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!m) return dateStr;
+  const y = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10);
+  const d = parseInt(m[3], 10);
+  const dow = ['日','月','火','水','木','金','土'][new Date(y, mo-1, d).getDay()];
+  return `${mo}月${d}日（${dow}）`;
+}
+
 function formatInterviewDatesJP(interviewDates = []) {
-  // "2026/04/28　終日可能" / "2026/04/28　10:00〜12:00" 形式
+  // "5月19日（月）　終日可能" / "5月19日（月）　10:00〜12:00" 形式
   const out = [];
   for (const iv of interviewDates) {
-    const date = (iv.date || '').replace(/-/g, '/');
-    if (!date) continue;
+    const datePretty = formatDateJP(iv.date || '');
+    if (!datePretty) continue;
     const ts = (iv.timeStart || '').trim();
     const te = (iv.timeEnd || '').trim();
     const note = (iv.note || '').trim();
@@ -582,7 +595,7 @@ function formatInterviewDatesJP(interviewDates = []) {
     } else {
       timeStr = '';
     }
-    out.push(`${date}　${timeStr}`);
+    out.push(`${datePretty}　${timeStr}`);
   }
   return out.join('\n');
 }
