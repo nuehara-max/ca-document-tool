@@ -897,32 +897,34 @@ function buildInterviewTable() {
     tr.innerHTML = `
       <td style="text-align:center;font-weight:700">${m}</td>
       <td><input type="date" class="iv-date" /></td>
-      <td><input type="time" class="iv-start" step="900" /></td>
-      <td><input type="time" class="iv-end"   step="900" /></td>
+      <td><input type="time" class="iv-start" step="300" /></td>
+      <td><input type="time" class="iv-end"   step="300" /></td>
       <td><input type="text" class="iv-note" placeholder="備考" /></td>`;
     tbody.appendChild(tr);
   });
-  // 15分単位への丸め込み（手入力で 10:13 などになった場合に補正）
+  // 5分単位への丸め込み（手入力で 10:13 などになった場合に補正）
   tbody.querySelectorAll('.iv-start, .iv-end').forEach(el => {
     el.addEventListener('change', () => {
-      el.value = snapTo15Min(el.value);
+      el.value = snapTo5Min(el.value);
     });
   });
 }
 
-// 'HH:MM' を15分刻みに丸めて返す（最寄りの15分へ）
-function snapTo15Min(hhmm) {
+// 'HH:MM' を5分刻みに丸めて返す（最寄りの5分へ）
+function snapTo5Min(hhmm) {
   if (!hhmm) return '';
   const m = String(hhmm).match(/^(\d{1,2}):(\d{2})$/);
   if (!m) return hhmm;
   let h = parseInt(m[1], 10);
   let min = parseInt(m[2], 10);
-  // 15分刻みに丸める（最寄り）
-  min = Math.round(min / 15) * 15;
+  // 5分刻みに丸める（最寄り）
+  min = Math.round(min / 5) * 5;
   if (min === 60) { min = 0; h += 1; }
-  if (h >= 24) h = 23, min = 45;
+  if (h >= 24) h = 23, min = 55;
   return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 }
+// 後方互換（過去コードからの参照用）
+function snapTo15Min(hhmm) { return snapTo5Min(hhmm); }
 
 // ── チップ（複数選択） ──
 function initChips() {
